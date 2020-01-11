@@ -6,6 +6,7 @@ from datetime import datetime
 
 import requests
 
+
 class DmConnectionHelper:
     def __init__(self):
         # Constants from decompiled Java code
@@ -156,7 +157,7 @@ class DmServer(DmConnectionHelper):
                   'game_id': game_id, 'cat_choice': cat_id}
 
         return self.send_request(void, params)
-        
+
     def get_game_stats(self):  # friends stats
         void = 'stats/my_game_stats'
         params = {}

@@ -1,4 +1,3 @@
-from pygame import Color
 from random import shuffle as randomize
 from requests import get
 
@@ -225,8 +224,7 @@ class Category:
     def __init__(self, id_, name, color):
         self.cat_id = id_
         self.name = name
-        self.color = Color(color)
-        # self.color = (self.color.r, self.color.g, self.color.b)
+        self.color = (self.color.r, self.color.g, self.color.b)
 
     def __str__(self):
         return self.name

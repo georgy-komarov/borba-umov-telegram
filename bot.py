@@ -12,7 +12,6 @@ ERROR_TITLE_KEY = 'popup_title'
 ERROR_MESSAGE_KEY = 'popup_mess'
 LOGGED_IN_KEY = 'logged_in'
 PLAYER_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть!'], ['Добавить в друзья']], one_time_keyboard=True)
-GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть!', 'Сдаться']], one_time_keyboard=True)
 LOAD_GAME, GET_GAME_ACTION, P1Q1, P1Q2, P1Q3, P2Q1, P2Q2, P2Q3, GET_NEXT_CATEGORY = range(9)  # /list
 GET_LOGIN, GET_PASSWORD, GET_EMAIL = range(3)  # /auth and /register
 GET_OPPONENT_NAME, GET_FIND_ACTION = range(2)  # /find
@@ -208,19 +207,23 @@ def load_games_list(bot, update, user_data):
         return ConversationHandler.END
 
 
-def load_game(bot, update, user_data):
-    def get_emoji(bool):
-        if bool is None:
-            return '⚪'  # white circle
-        return '✅' if bool else '❌'
-
-    session = pickle.loads(user_data['session'])
+def ask_game(bot, update, user_data):
     answer = update.message.text
     if answer.startswith('###'):
         update.message.reply_text('Данная кнопка не является кликабельной!\nВыберите игру:',
                                   reply_markup=ReplyKeyboardMarkup(user_data['keyboard'], one_time_keyboard=True))
         return LOAD_GAME
     game_id = answer.split('|')[-1].strip()
+    return load_game(bot, update, user_data, game_id)
+
+
+def load_game(bot, update, user_data, game_id):
+    def get_emoji(bool):
+        if bool is None:
+            return '⚪'  # white circle
+        return '✅' if bool else '❌'
+
+    session = pickle.loads(user_data['session'])
     response = session.load_game(game_id)
     if ERROR_MESSAGE_KEY in response:
         update.message.reply_text('Ошибка при загрузке игры!\n' + ERROR_MESSAGE_KEY)
@@ -249,10 +252,13 @@ def load_game(bot, update, user_data):
         text += game.result + '\n'
         if game.rating_bonus:
             text += 'Очков рейтига: ' + game.rating_bonus
+        update.message.reply_text(text, reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
     elif game.is_my_turn:
         GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть!', 'Сдаться']], one_time_keyboard=True)
     else:
         GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Синхронизировать', 'Сдаться']], one_time_keyboard=True)
+        user_data['game_id'] = game_id
     user_data['keyboard'] = GAME_ACTION_BUTTONS
     update.message.reply_text(text, reply_markup=GAME_ACTION_BUTTONS if not (game.is_my_turn is None) else None)
     return GET_GAME_ACTION
@@ -269,7 +275,7 @@ def game_menu_action(bot, update, user_data):
                                       reply_markup=user_data['keyboard'])
     elif answer == 'Синхронизировать':
         update.message.reply_text('Данная функция находится в разработке', reply_markup=user_data['keyboard'])
-        return GET_GAME_ACTION
+        return
     elif answer == 'Сдаться':
         update.message.reply_text('Данная функция находится в разработке', reply_markup=user_data['keyboard'])
         return GET_GAME_ACTION
