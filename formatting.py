@@ -108,7 +108,8 @@ class Game:
     def get_current_round(self):
         if self.state in [0, 10]:
             return self.rounds[0]
-        return self.rounds[(len(self.opponent_answers) // QUESTIONS_PER_ROUND) - 1] if self.opponent_answers else \
+        return self.rounds[(max(len(self.opponent_answers),
+                                len(self.my_answers)) // QUESTIONS_PER_ROUND) - 1] if self.opponent_answers else \
             self.rounds[0]
 
     def round_end(self):
@@ -224,7 +225,7 @@ class Category:
     def __init__(self, id_, name, color):
         self.cat_id = id_
         self.name = name
-        self.color = (self.color.r, self.color.g, self.color.b)
+        self.color = color
 
     def __str__(self):
         return self.name

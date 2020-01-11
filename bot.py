@@ -12,7 +12,8 @@ ERROR_TITLE_KEY = 'popup_title'
 ERROR_MESSAGE_KEY = 'popup_mess'
 LOGGED_IN_KEY = 'logged_in'
 PLAYER_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть!'], ['Добавить в друзья']], one_time_keyboard=True)
-LOAD_GAME, GET_GAME_ACTION, P1Q1, P1Q2, P1Q3, P2Q1, P2Q2, P2Q3, GET_NEXT_CATEGORY = range(9)  # /list
+GET_GAME_ID, GET_GAME_ACTION, P1Q1, P1Q2, P1Q3, P2Q1, P2Q2, P2Q3, GET_NEXT_CATEGORY, GIVE_UP_CONFIRM = range(
+    10)  # /list
 GET_LOGIN, GET_PASSWORD, GET_EMAIL = range(3)  # /auth and /register
 GET_OPPONENT_NAME, GET_FIND_ACTION = range(2)  # /find
 
@@ -30,7 +31,13 @@ def help(bot, update):
 /list - показать список игр
 /find <логин> - поиск пользователя <логин>
 /random - начать игру со случайным игроком
+/reset - выйти в главное меню
 /help - помощь''', reply_markup=ReplyKeyboardRemove())
+
+
+def reset(bot, update):
+    update.message.reply_text('Вы вернулись в главное меню!')
+    help(bot, update)
 
 
 def register(bot, update):
@@ -201,7 +208,7 @@ def load_games_list(bot, update, user_data):
             update.message.reply_text('Завершённые игры:\n' + make_text(finished_games, keyboard))
         user_data['keyboard'] = keyboard
         update.message.reply_text('Выберите игру:', reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True))
-        return LOAD_GAME
+        return GET_GAME_ID
     else:
         update.message.reply_text('Проблема с получением списка игр!')
         return ConversationHandler.END
@@ -212,8 +219,9 @@ def ask_game(bot, update, user_data):
     if answer.startswith('###'):
         update.message.reply_text('Данная кнопка не является кликабельной!\nВыберите игру:',
                                   reply_markup=ReplyKeyboardMarkup(user_data['keyboard'], one_time_keyboard=True))
-        return LOAD_GAME
+        return GET_GAME_ID
     game_id = answer.split('|')[-1].strip()
+    user_data['game_id'] = game_id
     return load_game(bot, update, user_data, game_id)
 
 
@@ -241,8 +249,7 @@ def load_game(bot, update, user_data, game_id):
         for i in range(QUESTIONS_PER_ROUND):
             text += get_emoji(me[i])
         text += ' ' * 7
-        if game.state == 1 and (
-                r_num == game.current_round.number - 1 and game.is_my_turn or r_num == game.current_round.number and not game.is_my_turn):
+        if game.state == 1 and r_num + 1 == game.current_round.number:
             text += ' СКРЫТО' if game.is_my_turn else '  ИГРАЕТ'
         else:
             for i in range(QUESTIONS_PER_ROUND):
@@ -252,36 +259,55 @@ def load_game(bot, update, user_data, game_id):
         text += game.result + '\n'
         if game.rating_bonus:
             text += 'Очков рейтига: ' + game.rating_bonus
-        update.message.reply_text(text, reply_markup=ReplyKeyboardRemove())
-        return ConversationHandler.END
+        GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Вернуться к списку игр ↩']],
+                                                  one_time_keyboard=True)
     elif game.is_my_turn:
-        GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть!', 'Сдаться']], one_time_keyboard=True)
+        GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть 🎮', 'Сдаться ❗'], ['Вернуться к списку игр ↩']],
+                                                  one_time_keyboard=True)
     else:
-        GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Синхронизировать', 'Сдаться']], one_time_keyboard=True)
-        user_data['game_id'] = game_id
+        GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Синхронизировать 🔄', 'Сдаться ❗'], ['Вернуться к списку игр ↩']],
+                                                  one_time_keyboard=True)
     user_data['keyboard'] = GAME_ACTION_BUTTONS
-    update.message.reply_text(text, reply_markup=GAME_ACTION_BUTTONS if not (game.is_my_turn is None) else None)
+    update.message.reply_text(text, reply_markup=GAME_ACTION_BUTTONS)
     return GET_GAME_ACTION
 
 
 def game_menu_action(bot, update, user_data):
     answer = update.message.text
-    if answer == 'Играть!':
+    if answer == 'Играть 🎮':
         del user_data['keyboard']
         try:  # FIXME: DEBUG
             return processing(bot, update, user_data)
         except Exception as exception:
             update.message.reply_text('Кажется что-то пошло не так. Ошибка: {}'.format(exception),
                                       reply_markup=user_data['keyboard'])
-    elif answer == 'Синхронизировать':
-        update.message.reply_text('Данная функция находится в разработке', reply_markup=user_data['keyboard'])
-        return
-    elif answer == 'Сдаться':
-        update.message.reply_text('Данная функция находится в разработке', reply_markup=user_data['keyboard'])
-        return GET_GAME_ACTION
+    elif answer == 'Синхронизировать 🔄':
+        return load_game(bot, update, user_data, user_data['game_id'])
+    elif answer == 'Сдаться ❗':
+        update.message.reply_text('Вы действительно хотите сдаться?',
+                                  reply_markup=ReplyKeyboardMarkup([['Да ✅', 'Нет ❌']]))
+        return GIVE_UP_CONFIRM
+    elif answer == 'Вернуться к списку игр ↩':
+        del user_data['keyboard']
+        del user_data['game_id']
+        return load_games_list(bot, update, user_data)
     else:
         update.message.reply_text('Выберите корректное действие!', reply_markup=user_data['keyboard'])
         return GET_GAME_ACTION
+
+
+def give_up_confirm(bot, update, user_data):
+    answer = update.message.text
+    if answer not in ['Да ✅', 'Нет ❌']:
+        update.message.reply_text('Выберите корректный вариант!', reply_markup=ReplyKeyboardMarkup([['Да ✅', 'Нет ❌']]))
+        return GIVE_UP_CONFIRM
+    elif answer == 'Да ✅':
+        session = pickle.loads(user_data['session'])
+        session.give_up(user_data['game_id'])
+        update.message.reply_text('Вы сдались!', reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
+    else:
+        return load_game(bot, update, user_data, user_data['game_id'])
 
 
 def processing(bot, update, user_data):
@@ -359,12 +385,15 @@ def p1q2(bot, update, user_data):
 def p1q3(bot, update, user_data):
     get_answer(bot, update, user_data, 3)
     game = pickle.loads(user_data['current_game'])
-    if game.current_round.number != 6:
+    if game.current_round.number != 6 and game.state == 1:
         game.current_round = game.get_round_by_index(game.current_round.number)
         user_data['current_game'] = pickle.dumps(game)
         return ask_category(bot, update, user_data)
     else:
-        return ConversationHandler.END
+        session = pickle.loads(user_data['session'])
+        round_end_info = game.round_end()
+        session.upload_round_answers(*round_end_info)
+        return load_game(bot, update, user_data, user_data['game_id'])
 
 
 def p2q1(bot, update, user_data):
@@ -385,7 +414,7 @@ def p2q3(bot, update, user_data):
     session = pickle.loads(user_data['session'])
     round_end_info = game.round_end()
     session.upload_round_answers(*round_end_info)
-    return ConversationHandler.END
+    return load_game(bot, update, user_data, user_data['game_id'])
 
 
 def main(api_token):
@@ -424,7 +453,7 @@ def main(api_token):
             GET_PASSWORD: [MessageHandler(Filters.text, get_password_register, pass_user_data=True)],
             GET_EMAIL: [MessageHandler(Filters.text, get_email_register, pass_user_data=True)]
         },
-        fallbacks=[]
+        fallbacks=[CommandHandler('reset', reset)]
     )
 
     auth_conversation = ConversationHandler(
@@ -433,7 +462,7 @@ def main(api_token):
             GET_LOGIN: [MessageHandler(Filters.text, get_login_auth, pass_user_data=True)],
             GET_PASSWORD: [MessageHandler(Filters.text, get_password_auth, pass_user_data=True)]
         },
-        fallbacks=[]
+        fallbacks=[CommandHandler('reset', reset)]
     )
 
     find_user_conversation = ConversationHandler(
@@ -442,13 +471,13 @@ def main(api_token):
             GET_OPPONENT_NAME: [MessageHandler(Filters.text, get_opponent_name, pass_user_data=True)],
             GET_FIND_ACTION: [MessageHandler(Filters.text, user_action, pass_user_data=True)]
         },
-        fallbacks=[]
+        fallbacks=[CommandHandler('reset', reset)]
     )
 
     game_conversation = ConversationHandler(
         entry_points=[CommandHandler('list', load_games_list, pass_user_data=True)],
         states={
-            LOAD_GAME: [MessageHandler(Filters.text, load_game, pass_user_data=True)],
+            GET_GAME_ID: [MessageHandler(Filters.text, ask_game, pass_user_data=True)],
             GET_GAME_ACTION: [MessageHandler(Filters.text, game_menu_action, pass_user_data=True)],
             P1Q1: [MessageHandler(Filters.text, p1q1, pass_user_data=True)],
             P1Q2: [MessageHandler(Filters.text, p1q2, pass_user_data=True)],
@@ -456,9 +485,13 @@ def main(api_token):
             P2Q1: [MessageHandler(Filters.text, p2q1, pass_user_data=True)],
             P2Q2: [MessageHandler(Filters.text, p2q2, pass_user_data=True)],
             P2Q3: [MessageHandler(Filters.text, p2q3, pass_user_data=True)],
-            GET_NEXT_CATEGORY: [MessageHandler(Filters.text, set_category, pass_user_data=True)]
+            GET_NEXT_CATEGORY: [MessageHandler(Filters.text, set_category, pass_user_data=True)],
+            GIVE_UP_CONFIRM: [MessageHandler(Filters.text, give_up_confirm, pass_user_data=True)]
         },
-        fallbacks=[]
+        fallbacks=[CommandHandler('list', load_games_list, pass_user_data=True),
+                   CommandHandler('random', start_random_game, pass_user_data=True),
+                   CommandHandler('find', find, pass_args=True, pass_user_data=True),
+                   CommandHandler('reset', reset)]
     )
 
     dp.add_handler(CommandHandler('random', start_random_game, pass_user_data=True))

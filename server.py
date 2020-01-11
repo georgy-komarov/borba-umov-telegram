@@ -95,8 +95,7 @@ class DmServer(DmConnectionHelper):
         if email:
             params['email'] = email
 
-        response = self.send_request(void, params)
-        return response
+        return self.send_request(void, params)
 
     def login(self, username, password):
         void = 'users/login'
@@ -109,8 +108,7 @@ class DmServer(DmConnectionHelper):
         void = 'users/login_vk_user'
         params = {'vk_id': vk_id, 'vk_access_token': vk_access_token}
 
-        response = self.send_request(void, params)
-        return response
+        return self.send_request(void, params)
 
     def reload_games_list(self):  # autoLogin
         void = 'users/current_user_games_m'
@@ -134,22 +132,19 @@ class DmServer(DmConnectionHelper):
         void = 'games/create_game'
         params = {'opponent_id': opponent_id, 'mode': game_mode, 'was_recommended': was_recommended}
 
-        raw_json = self.send_request(void, params)
-        return raw_json
+        return self.send_request(void, params)
 
     def start_random_game(self, game_mode='0'):
         void = 'games/start_random_game'
         params = {'mode': game_mode}
 
-        raw_json = self.send_request(void, params)
-        return raw_json
+        return self.send_request(void, params)
 
     def load_game(self, game_id):
         void = 'games_m'
         params = {'game_id': str(game_id)}
 
-        raw_json = self.send_request(void, params)
-        return raw_json
+        return self.send_request(void, params)
 
     def upload_round_answers(self, my_answers, question_types, no_images, game_id, cat_id):
         void = 'games/upload_round_answers'
@@ -169,3 +164,9 @@ class DmServer(DmConnectionHelper):
         params = {}
 
         return self.send_request(void, params, get=True)
+
+    def give_up(self, game_id):
+        void = 'games/give_up'
+        params = {'game_id': game_id}
+
+        return self.send_request(void, params)
