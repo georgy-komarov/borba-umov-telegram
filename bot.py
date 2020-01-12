@@ -11,7 +11,8 @@ from formatting import DmFormat, QUESTIONS_PER_ROUND
 ERROR_TITLE_KEY = 'popup_title'
 ERROR_MESSAGE_KEY = 'popup_mess'
 LOGGED_IN_KEY = 'logged_in'
-PLAYER_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть!'], ['Добавить в друзья']], one_time_keyboard=True)
+PLAYER_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть!'], ['Добавить в друзья']], one_time_keyboard=True,
+                                            resize_keyboard=True)
 GET_GAME_ID, GET_GAME_ACTION, P1Q1, P1Q2, P1Q3, P2Q1, P2Q2, P2Q3, GET_NEXT_CATEGORY, GIVE_UP_CONFIRM = range(
     10)  # /list
 GET_LOGIN, GET_PASSWORD, GET_EMAIL = range(3)  # /auth and /register
@@ -207,7 +208,8 @@ def load_games_list(bot, update, user_data):
             keyboard.append(['###  Завершённые игры  ###'])
             update.message.reply_text('Завершённые игры:\n' + make_text(finished_games, keyboard))
         user_data['keyboard'] = keyboard
-        update.message.reply_text('Выберите игру:', reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True))
+        update.message.reply_text('Выберите игру:', reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                                                                     resize_keyboard=True))
         return GET_GAME_ID
     else:
         update.message.reply_text('Проблема с получением списка игр!')
@@ -218,7 +220,8 @@ def ask_game(bot, update, user_data):
     answer = update.message.text
     if answer.startswith('###'):
         update.message.reply_text('Данная кнопка не является кликабельной!\nВыберите игру:',
-                                  reply_markup=ReplyKeyboardMarkup(user_data['keyboard'], one_time_keyboard=True))
+                                  reply_markup=ReplyKeyboardMarkup(user_data['keyboard'], one_time_keyboard=True,
+                                                                   resize_keyboard=True))
         return GET_GAME_ID
     game_id = answer.split('|')[-1].strip()
     user_data['game_id'] = game_id
@@ -260,13 +263,13 @@ def load_game(bot, update, user_data, game_id):
         if game.rating_bonus:
             text += 'Очков рейтига: ' + game.rating_bonus
         GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Вернуться к списку игр ↩']],
-                                                  one_time_keyboard=True)
+                                                  one_time_keyboard=True, resize_keyboard=True)
     elif game.is_my_turn:
         GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Играть 🎮', 'Сдаться ❗'], ['Вернуться к списку игр ↩']],
-                                                  one_time_keyboard=True)
+                                                  one_time_keyboard=True, resize_keyboard=True)
     else:
         GAME_ACTION_BUTTONS = ReplyKeyboardMarkup([['Синхронизировать 🔄', 'Сдаться ❗'], ['Вернуться к списку игр ↩']],
-                                                  one_time_keyboard=True)
+                                                  one_time_keyboard=True, resize_keyboard=True)
     user_data['keyboard'] = GAME_ACTION_BUTTONS
     update.message.reply_text(text, reply_markup=GAME_ACTION_BUTTONS)
     return GET_GAME_ACTION
@@ -285,7 +288,7 @@ def game_menu_action(bot, update, user_data):
         return load_game(bot, update, user_data, user_data['game_id'])
     elif answer == 'Сдаться ❗':
         update.message.reply_text('Вы действительно хотите сдаться?',
-                                  reply_markup=ReplyKeyboardMarkup([['Да ✅', 'Нет ❌']]))
+                                  reply_markup=ReplyKeyboardMarkup([['Да ✅', 'Нет ❌']], resize_keyboard=True))
         return GIVE_UP_CONFIRM
     elif answer == 'Вернуться к списку игр ↩':
         del user_data['keyboard']
@@ -299,7 +302,8 @@ def game_menu_action(bot, update, user_data):
 def give_up_confirm(bot, update, user_data):
     answer = update.message.text
     if answer not in ['Да ✅', 'Нет ❌']:
-        update.message.reply_text('Выберите корректный вариант!', reply_markup=ReplyKeyboardMarkup([['Да ✅', 'Нет ❌']]))
+        update.message.reply_text('Выберите корректный вариант!',
+                                  reply_markup=ReplyKeyboardMarkup([['Да ✅', 'Нет ❌']], resize_keyboard=True))
         return GIVE_UP_CONFIRM
     elif answer == 'Да ✅':
         session = pickle.loads(user_data['session'])
@@ -327,7 +331,7 @@ def ask_question(bot, update, user_data, question):
     question = game.current_round.get_questions()[question - 1]
     variants = question.rand_answers
     keyboard = ReplyKeyboardMarkup([[variants[0].text, variants[1].text], [variants[2].text, variants[3].text]],
-                                   one_time_keyboard=True)
+                                   one_time_keyboard=True, resize_keyboard=True)
     update.message.reply_text(question.question_text, reply_markup=keyboard)
     user_data['current_game'] = pickle.dumps(game)
 
@@ -356,7 +360,8 @@ def get_answer(bot, update, user_data, question):
 def ask_category(bot, update, user_data):
     game = pickle.loads(user_data['current_game'])
     a, b, c = [cat.name for cat in game.current_round.categories_variants]
-    update.message.reply_text('Выберите категорию для противника:', reply_markup=ReplyKeyboardMarkup([[a, b], [c]]))
+    update.message.reply_text('Выберите категорию для противника:',
+                              reply_markup=ReplyKeyboardMarkup([[a, b], [c]], resize_keyboard=True))
     return GET_NEXT_CATEGORY
 
 
@@ -505,5 +510,5 @@ def main(api_token):
 
 
 if __name__ == '__main__':
-    TOKEN = 'TOKEN'
+    TOKEN = '526471154:AAHpXXYOSTU-FR0-l897OWsQO-adfZWU_mk'
     main(TOKEN)
