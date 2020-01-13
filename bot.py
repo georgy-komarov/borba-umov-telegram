@@ -226,6 +226,7 @@ def ask_game(bot, update, user_data):
         return GET_GAME_ID
     elif answer.startswith('Вернуться в главное меню ↩'):
         reset(bot, update)
+        return ConversationHandler.END
     game_id = answer.split('|')[-1].strip()
     user_data['game_id'] = game_id
     return load_game(bot, update, user_data, game_id)
