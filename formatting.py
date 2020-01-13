@@ -8,7 +8,7 @@ CATEGORIES_VARIANTS = 3
 VARIANTS_COUNT = 4
 
 
-class DmFormat:
+class Formatter:
     def __init__(self, response):
         self.response = response['game']
         self.questions = self.response['questions']

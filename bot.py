@@ -5,8 +5,8 @@ import threading
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Updater, CommandHandler, MessageHandler, ConversationHandler, Filters
 
-from server import DmServer
-from formatting import DmFormat, QUESTIONS_PER_ROUND
+from server import Server
+from formatting import Formatter, QUESTIONS_PER_ROUND
 
 ERROR_TITLE_KEY = 'popup_title'
 ERROR_MESSAGE_KEY = 'popup_mess'
@@ -60,7 +60,7 @@ def get_password_register(bot, update, user_data):
 
 def get_email_register(bot, update, user_data):
     user_data['email'] = update.message.text
-    server = DmServer()
+    server = Server()
     response = server.create_user(user_data['login'], user_data['password'],
                                   user_data['email'] if user_data['email'] != '0' else None)
     if ERROR_MESSAGE_KEY in response:
@@ -84,7 +84,7 @@ def get_login_auth(bot, update, user_data):
 
 def get_password_auth(bot, update, user_data):
     user_data['password'] = update.message.text
-    server = DmServer()
+    server = Server()
     response = server.login(user_data['login'], user_data['password'])
     if ERROR_MESSAGE_KEY in response:
         update.message.reply_text(response[ERROR_MESSAGE_KEY])
@@ -207,7 +207,7 @@ def load_games_list(bot, update, user_data):
         if finished_games:
             keyboard.append(['ℹ️  Завершённые игры  ℹ️'])
             update.message.reply_text('Завершённые игры:\n' + make_text(finished_games, keyboard))
-        keyboard.append('Вернуться в главное меню ↩')
+        keyboard.append(['Вернуться в главное меню ↩'])
         user_data['keyboard'] = keyboard
         update.message.reply_text('Выберите игру:', reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                                      resize_keyboard=True))
@@ -225,7 +225,7 @@ def ask_game(bot, update, user_data):
                                                                    resize_keyboard=True))
         return GET_GAME_ID
     elif answer.startswith('Вернуться в главное меню ↩'):
-        return ConversationHandler.END
+        reset(bot, update)
     game_id = answer.split('|')[-1].strip()
     user_data['game_id'] = game_id
     return load_game(bot, update, user_data, game_id)
@@ -243,7 +243,7 @@ def load_game(bot, update, user_data, game_id):
         update.message.reply_text('Ошибка при загрузке игры!\n' + ERROR_MESSAGE_KEY)
         return ConversationHandler.END
     try:
-        game = DmFormat(response).json_to_game()
+        game = Formatter(response).json_to_game()
         user_data['current_game'] = pickle.dumps(game)
     except:
         update.message.reply_text('Ошибка при загрузке игры!')

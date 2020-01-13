@@ -7,7 +7,7 @@ from datetime import datetime
 import requests
 
 
-class DmConnectionHelper:
+class ConnectionHelper:
     def __init__(self):
         # Constants from decompiled Java code
         self.password_salt = 'YhEpgbNqoXOaPXXUxvYm'
@@ -65,7 +65,7 @@ class DmConnectionHelper:
         return hashlib.md5((self.password_salt + password_string).encode()).hexdigest()
 
 
-class DmServer(DmConnectionHelper):
+class Server(ConnectionHelper):
     def __init__(self):
         super().__init__()
         self.session = requests.Session()
