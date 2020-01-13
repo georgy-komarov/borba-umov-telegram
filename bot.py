@@ -120,7 +120,7 @@ def find_user(bot, update, user_data):
         update.message.reply_text(
             'Пользлватель {} найден! Какое действие вы хотите совершить?'.format(user_data['opponent']),
             reply_markup=PLAYER_ACTION_BUTTONS)
-        user_data['opponent_id'] = response['u']['user_id']
+        user_data['opponent_id'] = response['qdOpponent']['user_id']
         return GET_FIND_ACTION
 
 
@@ -257,7 +257,7 @@ def load_game(bot, update, user_data, game_id):
             text += get_emoji(me[i])
         text += ' ' * 7
         if game.state == 1 and r_num + 1 == game.current_round.number:
-            text += ' СКРЫТО' if game.is_my_turn else '  ИГРАЕТ'
+            text += 'СКРЫТО' if game.is_my_turn else 'ИГРАЕТ'
         else:
             for i in range(QUESTIONS_PER_ROUND):
                 text += get_emoji(opponent[i])
