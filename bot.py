@@ -199,14 +199,15 @@ def load_games_list(bot, update, user_data):
             update.message.reply_text('Список игр пуст', reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         if active_games:
-            keyboard.append(['###  Активные игры (ваш ход)  ###'])
+            keyboard.append(['ℹ️  Активные игры (ваш ход)  ℹ️'])
             update.message.reply_text('Активные игры (ваш ход):\n' + make_text(active_games, keyboard))
         if waiting_games:
-            keyboard.append(['###  Ожидается ход соперника  ###'])
+            keyboard.append(['ℹ️  Ожидается ход соперника  ℹ️'])
             update.message.reply_text('Ожидается ход соперника:\n' + make_text(waiting_games, keyboard))
         if finished_games:
-            keyboard.append(['###  Завершённые игры  ###'])
+            keyboard.append(['ℹ️  Завершённые игры  ℹ️'])
             update.message.reply_text('Завершённые игры:\n' + make_text(finished_games, keyboard))
+        keyboard.append('Вернуться в главное меню ↩')
         user_data['keyboard'] = keyboard
         update.message.reply_text('Выберите игру:', reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                                      resize_keyboard=True))
@@ -218,11 +219,13 @@ def load_games_list(bot, update, user_data):
 
 def ask_game(bot, update, user_data):
     answer = update.message.text
-    if answer.startswith('###'):
+    if answer.startswith('ℹ️'):
         update.message.reply_text('Данная кнопка не является кликабельной!\nВыберите игру:',
                                   reply_markup=ReplyKeyboardMarkup(user_data['keyboard'], one_time_keyboard=True,
                                                                    resize_keyboard=True))
         return GET_GAME_ID
+    elif answer.startswith('Вернуться в главное меню ↩'):
+        return ConversationHandler.END
     game_id = answer.split('|')[-1].strip()
     user_data['game_id'] = game_id
     return load_game(bot, update, user_data, game_id)
