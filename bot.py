@@ -422,7 +422,7 @@ def p2q3(bot, update, user_data):
     return load_game(bot, update, user_data, user_data['game_id'])
 
 
-def main(api_token):
+def main(updater):
     def load_data():
         try:
             f = open('userdata', 'rb')
@@ -442,7 +442,6 @@ def main(api_token):
             finally:
                 time.sleep(60)
 
-    updater = Updater(api_token)
     dp = updater.dispatcher
 
     load_data()
@@ -505,10 +504,32 @@ def main(api_token):
     dp.add_handler(find_user_conversation)
     dp.add_handler(game_conversation)
 
-    updater.start_polling()
-    print('BOT Started!')
+    try:
+        updater.bot.get_me()
+        updater.start_polling()
+        print('BOT - OK!')
+
+        updater.idle()
+    except:
+        print('BOT - Error!')
+
+
+def setup_and_start(token, proxy=True):
+    # Указываем настройки прокси (socks5)
+    address = "aws.komarov.cf"
+    port = 7777
+    username = "georgy.komarov"
+    password = "08092001"
+
+    updater = Updater(token, request_kwargs={'proxy_url': f'socks5://{address}:{port}/',
+                                             'urllib3_proxy_kwargs': {'username': username,
+                                                                      'password': password}} if proxy else None)
+    print('Proxy - OK!')
+
+    # Запускаем бота
+    main(updater)
 
 
 if __name__ == '__main__':
     TOKEN = '526471154:AAHpXXYOSTU-FR0-l897OWsQO-adfZWU_mk'
-    main(TOKEN)
+    setup_and_start(TOKEN)
