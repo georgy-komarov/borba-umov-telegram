@@ -98,6 +98,8 @@ class Game:
     def get_result(self):
         if self.state == 6:
             return 'Время вышло'
+        elif self.state == 5:
+            return 'Поражение (вы сдались)'
         elif self.opponent_score == self.my_score:
             return 'Ничья'
         return 'ПОБЕДА!' if self.my_score > self.opponent_score or self.rating_bonus > 0 else 'Поражение'
