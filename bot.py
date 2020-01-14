@@ -336,7 +336,11 @@ def ask_question(bot, update, user_data, question):
     variants = question.rand_answers
     keyboard = ReplyKeyboardMarkup([[variants[0].text, variants[1].text], [variants[2].text, variants[3].text]],
                                    one_time_keyboard=True, resize_keyboard=True)
-    update.message.reply_text(question.question_text, reply_markup=keyboard)
+    if user_data.get('cheats') == 1:
+        question_text_msg = f'{question.question_text} ({question.answers[0].text})'
+    else:
+        question_text_msg = question.question_text
+    update.message.reply_text(question_text_msg, reply_markup=keyboard)
     user_data['current_game'] = pickle.dumps(game)
 
 
@@ -426,6 +430,18 @@ def p2q3(bot, update, user_data):
     return load_game(bot, update, user_data, user_data['game_id'])
 
 
+def cheats(bot, update, user_data):
+    answer = update.message.text
+    value = answer.split()[1]
+    try:
+        value = int(value)
+    except ValueError:
+        update.message.reply_text("Некорректное значение аргумента!")
+    if value in [0, 1]:
+        user_data['cheats'] = value
+        update.message.reply_text('Ок')
+
+
 def main(updater):
     def load_data():
         try:
@@ -503,6 +519,7 @@ def main(updater):
     )
 
     dp.add_handler(CommandHandler('random', start_random_game, pass_user_data=True))
+    dp.add_handler(CommandHandler('cheats', cheats, pass_user_data=True))
     dp.add_handler(register_conversation)
     dp.add_handler(auth_conversation)
     dp.add_handler(find_user_conversation)
