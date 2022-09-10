@@ -1,3 +1,5 @@
+# Порт игры "Борьба умов" в Telegram (проект Яндекс.Лицей)
+
 1. Install dependencies: 
 `pip3 install requests`
 `pip3 install python-telegram-bot==11.1.0`
